@@ -28,7 +28,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const isPasswordValid = password === decrypt(user.password!);
-  console.log(decrypt(user.password));
   if (!isPasswordValid) {
     throw createHttpResponse({
       status: 401,

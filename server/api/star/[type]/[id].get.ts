@@ -1,4 +1,5 @@
-import { desc, sql, eq, and } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
+import type { LikeableType } from '~~/server/database/schema'
 
 export default defineEventHandler(async (event) => {
   const { user } = await getUserSession(event)
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
       and(
         eq(tables.star.userId, user.id),
         eq(tables.star.likeableId, id),
-        eq(tables.star.likeableType, type)
+        eq(tables.star.likeableType, type as LikeableType)
       )
     )
 
@@ -71,7 +72,7 @@ export default defineEventHandler(async (event) => {
       .values({
         userId: user.id,
         likeableId: id,
-        likeableType: type
+        likeableType: type as LikeableType
       })
 
     return createHttpResponse({

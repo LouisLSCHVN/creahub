@@ -12,7 +12,25 @@ export default defineEventHandler(async (event) => {
         return createValidationError(workshop.error)
     }
 
-    // Créer le workshop
+    // check if the current user already have this name as a workshop
+    const doesWorkshopExist = await useDrizzle()
+    .select()
+    .from(tables.workshop)
+    .where(
+        and(
+            eq(tables.workshop.ownerId, user.id),
+            eq(tables.workshop.name, workshop.data.name)
+        )
+    )
+    .get();
+
+    if (doesWorkshopExist) {
+        return createHttpResponse({
+            status: 400,
+            message: 'You already have a workshop with this name'
+        });
+    }
+
     const newWorkshop = {
         ...workshop.data,
         userId: user.id,
@@ -26,7 +44,6 @@ export default defineEventHandler(async (event) => {
         return createHttpResponse({ status: 500, message: 'Failed to create workshop' })
     }
 
-    // Créer la branche main par défaut
     const mainBranch = {
         workshopId: workshopResult.meta.last_row_id,
         name: 'main',

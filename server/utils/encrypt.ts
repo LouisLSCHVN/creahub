@@ -1,8 +1,6 @@
 import CryptoJS from 'crypto-js';
 
-// Utiliser une clé secrète stockée dans les variables d'environnement
-const SECRET_KEY = "1e2e3e4e5e6e7e8e9e0eiozjfz289U8";
-
+const SECRET_KEY = "1e2e3e4e5e6e7e8e9e0dzdzaeiozjfz289U8";
 
 export const encrypt = (text: string): string => {
   try {

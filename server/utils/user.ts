@@ -1,4 +1,4 @@
 export const sanitizeUser = (user: User) => {
-    (user as { password?: string }).password = undefined;
+    delete (user as { password?: string }).password;
     return user
 }
