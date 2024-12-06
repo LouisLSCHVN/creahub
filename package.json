@@ -1,0 +1,31 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@louislschvn/nuxt-form": "^1.0.6",
+    "@nuxt/devtools": "latest",
+    "@nuxthub/core": "^0.8.7",
+    "@nuxtjs/critters": "^0.7.2",
+    "@types/crypto-js": "^4.2.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "drizzle-kit": "^0.28.1",
+    "nuxt": "^3.14.1592",
+    "nuxt-auth-utils": "^0.5.5",
+    "wrangler": "^3.88.0"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "drizzle-orm": "^0.36.3",
+    "zod": "^3.23.8"
+  }
+}
