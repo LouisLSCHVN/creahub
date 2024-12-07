@@ -46,7 +46,7 @@ export const folder = sqliteTable('folder', {
   branchId: integer('branch_id')
     .references(() => branch.id, { onDelete: 'cascade' })
     .notNull(),
-  parentFolderId: integer('parent_folder_id'),
+  parentFolderId: integer('parent_folder_id').default(0),
   name: text('name').notNull(),
   description: text('description'),
   icon: text('icon').notNull().default('i-heroicons-folder'),

@@ -4,10 +4,38 @@ interface DisplayWorkshop extends Workshop {
 
 export function useWorkshopState() {
   const route = useRoute()
+  const router = useRouter()
+
   const workshopName = route.params.workshop as string
   const username = route.params.user as string
+  const action = route.params.action as string
+  const branchParam = route.params.branch as string
 
-  const workshop = useState(`${username}/${workshopName}`, () => null) as Ref<DisplayWorkshop | null>
+  const workshop = useState<DisplayWorkshop | null>(`${username}/${workshopName}`, () => null)
+  const currentBranch = useState<Branch | null>('currentBranch', () => null)
+
+  // Surveille les changements de branche dans l'URL ou le workshop
+  watch([() => route.params.branch, () => workshop.value], ([newBranch]) => {
+    if (!workshop.value?.branches.length) return
+
+    // Si pas de branche dans l'URL, utiliser 'main'
+    const branchName = newBranch || 'main'
+    const branch = workshop.value.branches.find(b => b.name === branchName)
+
+    if (branch) {
+      currentBranch.value = branch
+    } else {
+      throw createError({
+        statusMessage: 'Branch not found',
+        statusCode: 404
+      })
+    }
+  }, { immediate: true })
+
+  const updateCurrentBranch = async (name: string) => {
+    currentBranch.value = workshop.value?.branches.find(b => b.name === name) || null
+    await router.push(`/${username}/${workshopName}/${action}/${name}`)
+  }
 
   async function fetchWorkshop() {
       try {
@@ -32,6 +60,15 @@ export function useWorkshopState() {
         }
 
         workshop.value = data.data
+
+        // Met à jour currentBranch après chargement du workshop
+        if (workshop.value?.branches.length) {
+          const branchName = branchParam || 'main'
+          const branch = workshop.value.branches.find(b => b.name === branchName)
+          if (branch) {
+            currentBranch.value = branch
+          }
+        }
       } catch (error) {
         throw createError({
           statusMessage: (error as any).message || 'Error fetching workshop',
@@ -72,8 +109,10 @@ export function useWorkshopState() {
 
   return {
     workshop,
+    currentBranch,
     fetchWorkshop,
     createBranch,
     deleteBranch,
+    updateCurrentBranch
   }
 }

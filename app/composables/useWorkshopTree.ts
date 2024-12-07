@@ -1,4 +1,4 @@
-interface InsertFolder {
+export interface InsertFolder {
   title: string
   description: string
   branchId: number
@@ -10,7 +10,9 @@ interface InsertFolder {
 export function useWorkshopTree() {
   const createFolder = async (payload: InsertFolder) => {
     try {
-      if(!payload.parentFolderId) payload.parentFolderId = 0
+      if(!payload.parentFolderId) {
+        payload.parentFolderId = 0
+      }
       const response = await $fetch('/api/folder/new', {
         method: 'POST',
         body: payload
