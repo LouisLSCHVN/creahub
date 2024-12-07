@@ -4,8 +4,6 @@ export default defineEventHandler(async (event) => {
         return createHttpResponse({ status: 401 })
     }
 
-    const doesBranchExist = await useDrizzle().select().from(tables.branch)
-
     const { workshopId, name } = await readBody(event)
     if (!workshopId || !name) {
         return createHttpResponse({ status: 400 })
@@ -25,11 +23,13 @@ export default defineEventHandler(async (event) => {
         name,
         createdAt: new Date(),
         updatedAt: new Date(),
-    })
+    }).returning();
 
-    if(result.error) {
+    console.log(result);
+
+    if(!result[0]) {
         return createHttpResponse({ status: 500, message: 'Failed to create workshop' })
     }
 
-    return createHttpResponse({ status: 201, data: result.data })
+    return createHttpResponse({ status: 201, data: result[0] })
 })

@@ -25,9 +25,7 @@
                         :key="option.value"
                         :value="option.value"
                     >
-                        <div>
-                            {{ option.label }}
-                        </div>
+                        {{ option.label }}
                     </option>
                 </select>
 

@@ -4,7 +4,8 @@ export default defineEventHandler(async (event) => {
         '/api/get/',
         '/api/user/login',
         '/api/user/signup',
-        '/api/search/'
+        '/api/search/',
+        '/api/_hub/'
     ]
 
     const path = getRequestURL(event).pathname

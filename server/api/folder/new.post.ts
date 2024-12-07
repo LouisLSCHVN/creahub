@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
     const { user } = await getUserSession(event)
-    console.log('User:', user) // Vérifier l'utilisateur
+    console.log('User:', user)
 
     if(!user) {
         return createHttpResponse({ status: 401, message: 'Unauthorized' })

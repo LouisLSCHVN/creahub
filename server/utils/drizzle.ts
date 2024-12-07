@@ -8,8 +8,3 @@ export const tables = schema
 export function useDrizzle() {
   return drizzle(hubDatabase(), { schema })
 }
-
-export type User = typeof schema.user.$inferSelect
-export type Workshop = typeof schema.workshop.$inferSelect
-export type File = typeof schema.file.$inferSelect
-export type appFeedback = typeof schema.appFeedback.$inferSelect
