@@ -53,6 +53,7 @@ function submitSignupForm() {
         },
         onSuccess: () => {
             console.log('Success')
+            reloadNuxtApp()
         }
     })
 }

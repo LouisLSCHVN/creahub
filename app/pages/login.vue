@@ -46,6 +46,7 @@ function submitLoginForm() {
         },
         onSuccess: () => {
             console.log('Success')
+            reloadNuxtApp()
         }
     })
 }

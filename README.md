@@ -5,3 +5,10 @@
 
 - [ ] Créer les endpoints pour les fichiers, get, puis new, puis delete.
 - [ ] Gérer les upload avec @LouisLSCHVN/nuxt-form
+
+
+## Mini Free Startup
+
+### Sendy
+
+A free wetransfer alternative

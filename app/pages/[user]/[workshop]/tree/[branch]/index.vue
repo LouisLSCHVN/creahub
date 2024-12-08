@@ -1,25 +1,17 @@
 <template>
     <div>
         {{ currentBranch }}
+        <pre v-if="tree">
+            {{ tree }}
+        </pre>
     </div>
 </template>
 <script setup lang="ts">
-const { currentBranch, fetchWorkshop } = useWorkshopState()
+const { currentBranch, fetchWorkshop, username, workshop } = useWorkshopState()
+const { fetchBranchTree, tree } = useWorkshopTree()
 await fetchWorkshop()
 
-interface WorkshopData extends Workshop {
-    branch: Branch;
-    tree: TreeNode[];
-}
-
-type TreeNode = FolderNode | FileNode;
-
-interface FolderNode extends Folder {
-    type: 'folder';
-    children: TreeNode[];
-}
-
-interface FileNode extends File {
-    type: 'file';
-}
+onMounted(async () => {
+    await fetchBranchTree(username, workshop.value!.name, currentBranch.value!.name)
+})
 </script>

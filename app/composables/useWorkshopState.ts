@@ -113,6 +113,9 @@ export function useWorkshopState() {
     fetchWorkshop,
     createBranch,
     deleteBranch,
-    updateCurrentBranch
+    updateCurrentBranch,
+    workshopName,
+    username,
+    branchParam,
   }
 }

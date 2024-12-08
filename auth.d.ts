@@ -1,7 +1,7 @@
-import { User as drizzleUser } from '~~/server/utils/drizzle';
+import { User } from '~~/shared/types/schema';
 
 declare module '#auth-utils' {
-  interface User extends drizzleUser {}
+  interface User extends User {}
 }
 
 export {};

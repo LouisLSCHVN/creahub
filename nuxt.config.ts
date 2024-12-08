@@ -20,6 +20,7 @@ export default defineNuxtConfig({
     "nuxt-auth-utils",
     "@nuxtjs/critters",
     "@louislschvn/nuxt-form",
+    "nuxt-typed-router",
   ],
   compatibilityDate: "2024-11-18",
 

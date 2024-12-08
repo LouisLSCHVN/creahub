@@ -67,11 +67,13 @@ export const file = sqliteTable('file', {
   name: text('name').notNull(),
   path: text('path').notNull(),
   folderId: integer('folder_id')
-  .references(() => folder.id, { onDelete: 'cascade' })
-  .notNull(),
+    .references(() => folder.id, { onDelete: 'cascade' })
+    .notNull(),
   fileType: text('file_type').$type<'image' | 'video' | 'link'>().notNull(),
   size: integer('size').notNull(),
   version: integer('version').notNull().default(1),
+  previousVersionId: integer('previous_version_id')
+    .references((): any => file.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 }, (table) => ({

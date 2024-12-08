@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
     // if workshop is private, check if user is owner
     if (
         workshop.visibility !== 'public' &&
-        String(currentUser?.id) !== String(workshop.ownerId)
+        String((currentUser as User)?.id) !== String(workshop.ownerId)
     ) {
             return createHttpResponse({
                 message: 'Not Found',

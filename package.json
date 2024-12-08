@@ -21,6 +21,8 @@
     "drizzle-kit": "^0.28.1",
     "nuxt": "^3.14.1592",
     "nuxt-auth-utils": "^0.5.5",
+    "nuxt-typed-router": "3.7.2-beta.1",
+    "prettier": "^3.4.2",
     "wrangler": "^3.93.0"
   },
   "dependencies": {
