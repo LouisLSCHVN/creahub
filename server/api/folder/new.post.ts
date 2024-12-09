@@ -1,7 +1,4 @@
 import { eq, and } from 'drizzle-orm' // Importez les opérateurs nécessaires
-import { defineEventHandler, getUserSession, readBody, createHttpResponse } from 'h3' // Importez les fonctions nécessaires
-import { useDrizzle } from '~/server/db' // Importez votre instance de Drizzle
-import { tables } from '~/server/schema' // Importez vos schémas de tables
 
 export default defineEventHandler(async (event) => {
     const { user } = await getUserSession(event)
@@ -33,14 +30,14 @@ export default defineEventHandler(async (event) => {
 
             console.log('Root folder:', rootFolder)
 
-            if (!rootFolder || rootFolder.length === 0) {
+            if (!rootFolder) {
                 return createHttpResponse({
                     status: 400,
                     message: 'Dossier root introuvable dans cette branche'
                 })
             }
 
-            parentFolderId = rootFolder[0].id
+            parentFolderId = rootFolder.id
         } else {
             // Vérifier que le parentFolderId existe
             const parentFolder = await db
@@ -51,7 +48,7 @@ export default defineEventHandler(async (event) => {
 
             console.log('Parent folder:', parentFolder)
 
-            if (!parentFolder || parentFolder.length === 0) {
+            if (!parentFolder) {
                 return createHttpResponse({
                     status: 400,
                     message: 'parentFolderId invalide'
@@ -72,7 +69,7 @@ export default defineEventHandler(async (event) => {
 
         console.log('Existing folder:', existingFolder) // Vérifier si un dossier existe
 
-        if (existingFolder && existingFolder.length > 0) {
+        if (existingFolder) {
             return createHttpResponse({
                 status: 400,
                 message: 'Un dossier avec ce nom existe déjà dans ce parent'
@@ -93,12 +90,6 @@ export default defineEventHandler(async (event) => {
 
         // Insérer le nouveau dossier
         const newFolderResult = await db.insert(tables.folder).values(newFolder).returning()
-
-        console.log('Insert result full details:', {
-            result: newFolderResult,
-            meta: newFolderResult.meta,
-            changes: newFolderResult.changes
-        });
 
         if (!newFolderResult[0]) {
             console.error('No last_row_id in result') // Logger l'erreur spécifique
@@ -128,7 +119,7 @@ export default defineEventHandler(async (event) => {
         return createHttpResponse({
             status: 201,
             message: 'Dossier créé avec succès',
-            data: {newFolder: createdFolder, id: createdFolder.meta.last_row_id}
+            data: { newFolder: createdFolder }
         });
     } catch (error) {
         // Log détaillé de l'erreur
