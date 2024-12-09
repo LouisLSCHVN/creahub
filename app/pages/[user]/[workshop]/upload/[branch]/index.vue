@@ -23,12 +23,14 @@
                 Add a Folder
             </button>
         </form>
-        <form>
-            <h2>Add a file</h2>
-            <input type="file" multiple />
-            <button type="submit">
-                Add a File
-            </button>
+        <form @submit.prevent="createFiles">
+            <h2>Ajouter des fichiers</h2>
+            <input type="file" multiple @change="handleFileSelection" />
+            <div v-for="(file, index) in files" :key="index">
+                <p>{{ file.name }}</p>
+                <progress :value="progress[file.name] || 0" max="100"></progress>
+            </div>
+            <button type="submit">Ajouter les fichiers</button>
         </form>
     </div>
 </template>
@@ -53,6 +55,27 @@ const folderToInsert = ref({
 
 async function handleFolderCreation() {
     await createFolder(folderToInsert.value)
+}
+
+// Gestion des fichiers
+const files = ref<File[]>([])
+const { progress, uploadFiles } = useFileUpload()
+
+function handleFileSelection(event: Event) {
+    const selectedFiles = (event.target as HTMLInputElement).files
+    if (selectedFiles) {
+        files.value = Array.from(selectedFiles)
+    }
+}
+
+async function createFiles() {
+    try {
+        await uploadFiles(files.value, '/api/file/new', currentBranch.value!.id, workshop.value!.id)
+        // Gérer le succès (par exemple, afficher un message ou rafraîchir la liste des fichiers)
+    } catch (error) {
+        // Gérer les erreurs (par exemple, afficher un message d'erreur)
+        console.error('Erreur lors du téléchargement des fichiers :', error)
+    }
 }
 
 console.log('current',currentBranch.value)
