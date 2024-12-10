@@ -51,9 +51,23 @@ export default defineEventHandler(async (event) => {
         updatedAt: new Date(),
     }
 
-    const branchResult = await useDrizzle().insert(tables.branch).values(mainBranch).execute();
-    if(branchResult.error) {
+    const [branchResult] = await useDrizzle().insert(tables.branch).values(mainBranch).returning();
+    if(!branchResult?.id) {
         return createHttpResponse({ status: 500, message: 'Failed to create main branch' })
+    }
+
+    const folderResult = await useDrizzle().insert(tables.folder).values({
+        branchId: branchResult.id,
+        name: 'root',
+        description: 'Root folder',
+        icon: 'i-heroicons-folder',
+        userId: newWorkshop.ownerId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }).returning()
+
+    if (!folderResult[0]) {
+        return createHttpResponse({ status: 500, message: 'Failed to create root folder' })
     }
 
     return createHttpResponse({

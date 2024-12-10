@@ -9,6 +9,12 @@
 - [ ] Faire en sorte que le workshop ait des couleurs, des typos, et qu'on puisse le rentrer
 - [ ] Faire en sorte qu'avec une ai, tu puisses trier un dossier ou un fichier que tu ajouterai
 
+## Pour demain
+
+- [X] Faire en sorte que quand on créé un workshop, le dossier root soit créé également.
+- [ ] Trouver un meilleur moyen d'uploader plusieurs fichiers (peut être une même requêtes qui peut lire plusieurs fichiers)
+- [ ] Optimiser la requête d'ajout de fichier
+- [ ] Pouvoir organiser simplement et proprement les fichiers / dossiers
 
 ## Mini Free Startup
 
