@@ -17,6 +17,15 @@
 - [X] Pouvoir organiser simplement et proprement les fichiers / dossiers
 - [X] Pouvoir ajouter des fichiers zips
 
+- [ ] Faire fonctionner correctement le [...path].get.ts
+- [ ] En front, ne jamais afficher root, faire en sorte qu'on puisse naviguer dans les dossiers
+- [ ] Dans useWorkshopState, créer un layout workshop qui fetch a chaque fois le workshop, et faire en sorte que si le workshop est déjà fetch, pas le refetch, on évite les requêtes inutiles
+- [ ] Faire un petit menu pour le layout workshop, avec un breadcrumb
+- [ ] Pour afficher un fichier, avec ses différentes versions. Et le télécharger aussi.
+- [ ] Peut être mettre en place le système de versionning/commits
+- [ ] Trouver un moyen de comparer les fichiers versionné
+
+- [ ] Mettre une sécurité Cloudflare
 - [ ] Pouvoir ajouter des fichiers a des dossiers et des dossiers a des dossiers
 
 
