@@ -15,6 +15,7 @@
 - [X] Trouver un meilleur moyen d'uploader plusieurs fichiers (peut être une même requêtes qui peut lire plusieurs fichiers)
 - [X] Optimiser la requête d'ajout de fichier
 - [X] Pouvoir organiser simplement et proprement les fichiers / dossiers
+- [X] Pouvoir ajouter des fichiers zips
 
 - [ ] Pouvoir ajouter des fichiers a des dossiers et des dossiers a des dossiers
 
