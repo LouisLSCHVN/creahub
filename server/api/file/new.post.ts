@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, inArray, desc } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
     console.log('Début du traitement de l\'upload de fichiers multiples.')
@@ -37,18 +37,16 @@ export default defineEventHandler(async (event) => {
 
         let folderId: number | null
         if (folderIdRaw && folderIdRaw.length > 0) {
-            const folderIdStr = Buffer.from(folderIdRaw).toString()
-            folderId = folderIdStr ? Number(folderIdStr) : null
+            folderId = Number(Buffer.from(folderIdRaw).toString())
         } else {
             folderId = null
         }
-        console.log('folderId converti en nombre :', folderId)
 
         // Convertir les données des ID depuis des Buffers vers des nombres
         const branchId = branchIdRaw ? parseInt(Buffer.from(branchIdRaw).toString()) : NaN
         const workshopId = workshopIdRaw ? parseInt(Buffer.from(workshopIdRaw).toString()) : NaN
 
-        // Vérifier que les champs requis sont présents
+        // Vérifier les champs requis
         if (isNaN(branchId) || isNaN(workshopId)) {
             console.warn('Champs requis manquants ou invalides (branchId ou workshopId).')
             return createHttpResponse({ status: 400, message: 'Missing or invalid required fields' })
@@ -57,69 +55,34 @@ export default defineEventHandler(async (event) => {
         const db = useDrizzle();
         console.log('Connexion à la base de données établie.')
 
-        // Vérifier si la branche existe
-        const existingBranch = await db.select().from(tables.branch).where(eq(tables.branch.id, branchId)).get()
-        console.log('Résultat de la vérification de la branche :', existingBranch)
+        // Récupérer workshop, branch, owner en une seule fois
+        const [existingBranch, workshop, workshopOwner] = await Promise.all([
+            db.select().from(tables.branch).where(eq(tables.branch.id, branchId)).get(),
+            db.select().from(tables.workshop).where(eq(tables.workshop.id, workshopId)).get(),
+            // On attend d'avoir le workshop pour récupérer l'owner
+        ]).then(async ([b, w]) => {
+            if (!b) {
+                console.warn('Branche non trouvée.')
+                throw createHttpResponse({ status: 404, message: 'Branch not found' })
+            }
+            if (!w) {
+                console.error('Atelier introuvable :', workshopId)
+                throw createHttpResponse({ status: 404, message: 'Workshop not found' })
+            }
+            const owner = await db.select().from(tables.user).where(eq(tables.user.id, w.ownerId)).get()
+            if (!owner) {
+                console.error('Propriétaire de l\'atelier introuvable :', w.ownerId)
+                throw createHttpResponse({ status: 404, message: 'Workshop owner not found' })
+            }
+            return [b, w, owner] as const
+        })
 
-        if (!existingBranch) {
-            console.warn('Branche non trouvée.')
-            return createHttpResponse({ status: 404, message: 'Branch not found' })
-        }
-
-        // Récupérer le nom du workshop
-        const workshop = await db.select().from(tables.workshop)
-            .where(eq(tables.workshop.id, workshopId))
-            .get()
-
-        if (!workshop) {
-            console.error('Atelier introuvable :', workshopId)
-            return createHttpResponse({ status: 404, message: 'Workshop not found' })
-        }
+        const branch = existingBranch
         console.log('Workshop récupéré :', workshop.name)
-
-        const workshopOwner = await db.select().from(tables.user).where(eq(tables.user.id, workshop.ownerId)).get()
-
-        if (!workshopOwner) {
-            console.error('Propriétaire de l\'atelier introuvable :', workshop.ownerId)
-            return createHttpResponse({ status: 404, message: 'Workshop owner not found' })
-        }
-
-        // Récupérer le nom de la branche
-        const branch = await db.select().from(tables.branch)
-            .where(eq(tables.branch.id, branchId))
-            .get()
-
-        if (!branch) {
-            console.error('Branche introuvable :', branchId)
-            return createHttpResponse({ status: 404, message: 'Branch not found' })
-        }
+        console.log('Propriétaire du workshop :', workshopOwner.name)
         console.log('Branche récupérée :', branch.name)
 
-        // Construire la hiérarchie des dossiers
-        let folderPath = ''
-        if (folderId) {
-            let currentFolderId = folderId
-            const folders = []
-
-            while (currentFolderId) {
-                const folder = await db.select().from(tables.folder)
-                    .where(eq(tables.folder.id, currentFolderId))
-                    .get()
-
-                if (folder) {
-                    folders.push(folder.name)
-                    currentFolderId = folder.parentFolderId!
-                } else {
-                    break
-                }
-            }
-
-            // Les dossiers sont empilés du plus profond au plus haut, nous devons les inverser
-            folderPath = folders.reverse().join('/')
-        }
-        console.log('Chemin des dossiers :', folderPath)
-
-        // Vérifier ou récupérer le folderId (root si pas fourni)
+        // Déterminer le folderId final (root si aucun spécifié)
         if (!folderId) {
             console.log('Récupération du dossier root de la branche...')
             const rootFolder = await db
@@ -135,120 +98,119 @@ export default defineEventHandler(async (event) => {
                 console.error('Dossier root introuvable dans la branche:', branchId)
                 return createHttpResponse({ status: 400, message: 'Dossier root introuvable' })
             }
-
             folderId = rootFolder.id
             console.log(`folderId assigné au dossier root : ${folderId}`)
         } else {
             // Vérifier que le folderId existe
-            const folder = await db
-                .select()
+            const folderExists = await db
+                .select({ id: tables.folder.id })
                 .from(tables.folder)
                 .where(eq(tables.folder.id, folderId))
                 .get()
 
-            if (!folder) {
+            if (!folderExists) {
                 console.error('Dossier invalide:', folderId)
                 return createHttpResponse({ status: 400, message: 'Dossier invalide' })
             }
         }
 
-        const uploadedFiles: any[] = []
+        // Construire le chemin du dossier
+        // Idéalement, on a stocké `full_path` en DB. Si pas possible, on récupère la hiérarchie
+        const folderPath = await getFolderPath(db, folderId) // Implémentez cette fonction pour éviter la boucle, ou gardez la logique initiale si nécessaire.
 
-        // Traiter chaque fichier individuellement
-        for (const fileItem of fileItems) {
-            const fileName = fileItem.filename
-            const fileType = fileItem.type
+        // Préparer une liste de noms de fichiers pour la vérification des versions
+        const fileNames = fileItems.map(item => item.filename!)
+
+        // Récupérer toutes les versions existantes pour ces fichiers en une seule requête
+        const existingFiles = await db.select().from(tables.file)
+            .where(
+                and(
+                    eq(tables.file.branchId, branchId),
+                    eq(tables.file.folderId, folderId),
+                    inArray(tables.file.name, fileNames)
+                )
+            )
+            .orderBy(desc(tables.file.version))
+            .all() // Récupérer tous, pas qu'un seul
+
+        // Créer un map {filename: currentMaxVersion}
+        const maxVersionsByFile: Record<string, {version: number, id: number|null}> = {}
+        for (const ef of existingFiles) {
+            // Le premier fichier rencontré avec ce nom est la plus grande version (trié desc)
+            if (!maxVersionsByFile[ef.name]) {
+                maxVersionsByFile[ef.name] = { version: ef.version, id: ef.id }
+            }
+        }
+
+        // Paralléliser l'upload vers le blob storage
+        const uploads = fileItems.map(async (fileItem) => {
+            const fileName = fileItem.filename!
+            const fileType = fileItem.type || ''
             const fileBuffer = fileItem.data as Buffer
 
-            console.log(`Fichier sélectionné : ${fileName}`)
-
-            if (!fileName || !fileBuffer) {
+            if (!fileBuffer) {
                 console.warn(`Fichier manquant ou invalide pour ${fileName}.`)
-                return createHttpResponse({ status: 400, message: 'Missing required fields for a file' })
+                throw createHttpResponse({ status: 400, message: 'Missing required fields for a file' })
             }
 
-            // Vérifier si le fichier existe déjà
-            const existingFile = await db.select().from(tables.file)
-                .where(
-                    and(
-                        eq(tables.file.name, fileName),
-                        eq(tables.file.branchId, branchId),
-                        eq(tables.file.folderId, folderId)
-                    )
-                )
-                .orderBy(desc(tables.file.version))
-                .limit(1)
-                .get()
-
-            console.log('Résultat de la vérification des fichiers existants :', existingFile)
-
+            const existingFileData = maxVersionsByFile[fileName]
             let version = 1
             let previousVersionId = null
-            if (existingFile) {
-                version = existingFile.version + 1
-                previousVersionId = existingFile.id
-                console.log(`Fichier existant trouvé. Incrémentation de la version à ${version} et définition de previousVersionId à ${previousVersionId}.`)
-            } else {
-                console.log('Aucun fichier existant trouvé. Initialisation de la version à 1.')
+            if (existingFileData) {
+                version = existingFileData.version + 1
+                previousVersionId = existingFileData.id
             }
 
-            // Créer un Blob à partir du Buffer
+            // Créer un Blob
             const fileBlob = new Blob([fileBuffer], { type: fileType })
-            console.log('Blob créé à partir du Buffer.')
 
-            // Valider le fichier
-            console.log('Validation du fichier avec ensureBlob.')
+            // Valider le blob
             ensureBlob(fileBlob, { maxSize: '1GB' })
-            console.log('Fichier validé. Début du téléchargement vers le blob storage.')
 
-            // Construire le chemin du blob
-            const blobPath = `${workshopOwner.name}/${workshop.name}/${branch.name}/${folderPath ? folderPath + '/' : ''}${fileName}`
-            console.log(`Chemin du blob : ${blobPath}`)
+            // Construire le chemin du blob avec version si souhaité
+            const extIndex = fileName.lastIndexOf('.')
+            const baseName = extIndex === -1 ? fileName : fileName.substring(0, extIndex)
+            const ext = extIndex === -1 ? '' : fileName.substring(extIndex)
+            const versionedFileName = `${baseName}_v${version}${ext}`
+
+            const blobPath = `${workshopOwner.name}/${workshop.name}/${branch.name}/${folderPath ? folderPath + '/' : ''}${versionedFileName}`
 
             // Envoyer le fichier dans le blob storage
-            const blobResult = await hubBlob().put(blobPath, fileBlob, {
-                addRandomSuffix: false
-            })
-            console.log('Fichier téléchargé dans le blob storage :', blobResult)
+            const blobResult = await hubBlob().put(blobPath, fileBlob, { addRandomSuffix: false })
 
-            const path = blobResult.pathname
-            console.log(`Chemin du fichier dans le storage : ${path}`)
-
-            // Déterminer le type de fichier (image, video, link)
             let fileCategory: 'image' | 'video' | 'link' = 'link'
-            if (fileType && fileType.startsWith('image/')) {
-                fileCategory = 'image'
-            } else if (fileType && fileType.startsWith('video/')) {
-                fileCategory = 'video'
-            }
+            if (fileType.startsWith('image/')) fileCategory = 'image'
+            else if (fileType.startsWith('video/')) fileCategory = 'video'
 
-            // Préparer l'objet fichier à insérer en DB
-            const newFile = {
+            return {
                 workshopId: workshopId,
                 branchId: branchId,
                 name: fileName,
-                path: path,
-                folderId: folderId,
+                path: blobResult.pathname,
+                folderId: folderId!,
                 fileType: fileCategory,
                 size: fileBuffer.length,
-                version: version,
-                previousVersionId: previousVersionId,
+                version,
+                previousVersionId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             }
+        })
 
-            console.log('Insertion du nouveau fichier dans la base de données :', newFile)
-            await db.insert(tables.file).values(newFile)
-            console.log('Fichier inséré avec succès dans la base de données.')
+        const newFiles = await Promise.all(uploads)
 
-            uploadedFiles.push(newFile)
+        // Insérer tous les fichiers en une fois (si votre BDD le permet)
+        // Sinon, vous pouvez faire un Promise.all(...) sur les insertions
+        for (const f of newFiles) {
+            await db.insert(tables.file).values(f)
         }
 
         console.log('Upload de tous les fichiers terminé avec succès.')
+
         return {
             status: 200,
             message: 'Files uploaded successfully',
-            data: uploadedFiles
+            data: newFiles
         }
 
     } catch (error) {
@@ -256,3 +218,28 @@ export default defineEventHandler(async (event) => {
         return createHttpResponse({ status: 500, message: 'Internal Server Error' })
     }
 })
+
+async function getFolderPath(db: ReturnType<typeof useDrizzle>, folderId: number): Promise<string> {
+    // Idéalement, vous avez une colonne 'full_path' dans 'folder'.
+    // Si non, on fait un seul appel pour récupérer tous les dossiers ancêtres en une requête.
+    // Exemple simplifié (pseudo code) :
+
+    // Récupérer tous les parents du dossier en une seule requête
+    // Dans drizzle-orm, vous pouvez soit faire plusieurs appels,
+    // soit stocker le full_path en BD.
+
+    // Pour la démonstration, on garde votre logique initiale mais on limite au strict nécessaire:
+    const folders: string[] = []
+    let currentFolderId = folderId
+    while (currentFolderId) {
+        const folder = await db.select().from(tables.folder)
+            .where(eq(tables.folder.id, currentFolderId))
+            .get()
+        if (!folder) break
+        if (folder.name !== 'root') {
+            folders.push(folder.name)
+        }
+        currentFolderId = folder.parentFolderId!
+    }
+    return folders.reverse().join('/')
+}

@@ -18,7 +18,6 @@ export function useFileUpload() {
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           const globalRatio = event.loaded / event.total
-          // Mettre à jour la progression de chaque fichier proportionnellement à sa taille
           let cumulative = 0
           for (const file of files) {
             const fileRatio = ((cumulative + file.size) <= (totalSize * globalRatio))
@@ -57,8 +56,47 @@ export function useFileUpload() {
     })
   }
 
+  const uploadZip = (zipFile: File, url: string, branchId: number, workshopId: number, folderId?: number) => {
+    return new Promise((resolve, reject) => {
+      // On gère ici la progression d’un seul fichier ZIP
+      progress.value[zipFile.name] = 0
+
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', url)
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const ratio = event.loaded / event.total
+          progress.value[zipFile.name] = Math.round(ratio * 100)
+        }
+      })
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response)
+        } else {
+          reject(xhr.statusText)
+        }
+      }
+
+      xhr.onerror = () => reject(xhr.statusText)
+
+      // Création du FormData avec le fichier ZIP et les identifiants supplémentaires
+      const formData = new FormData()
+      formData.append('file', zipFile)
+      formData.append('branchId', branchId.toString())
+      formData.append('workshopId', workshopId.toString())
+      if (folderId !== undefined) {
+        formData.append('folderId', folderId.toString())
+      }
+
+      xhr.send(formData)
+    })
+  }
+
   return {
     progress,
-    uploadFiles
+    uploadFiles,
+    uploadZip
   }
 }

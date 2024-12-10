@@ -12,9 +12,12 @@
 ## Pour demain
 
 - [X] Faire en sorte que quand on créé un workshop, le dossier root soit créé également.
-- [ ] Trouver un meilleur moyen d'uploader plusieurs fichiers (peut être une même requêtes qui peut lire plusieurs fichiers)
-- [ ] Optimiser la requête d'ajout de fichier
-- [ ] Pouvoir organiser simplement et proprement les fichiers / dossiers
+- [X] Trouver un meilleur moyen d'uploader plusieurs fichiers (peut être une même requêtes qui peut lire plusieurs fichiers)
+- [X] Optimiser la requête d'ajout de fichier
+- [X] Pouvoir organiser simplement et proprement les fichiers / dossiers
+
+- [ ] Pouvoir ajouter des fichiers a des dossiers et des dossiers a des dossiers
+
 
 ## Mini Free Startup
 

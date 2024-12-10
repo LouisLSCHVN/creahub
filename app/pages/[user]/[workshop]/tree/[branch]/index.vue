@@ -1,9 +1,7 @@
 <template>
     <div>
         {{ currentBranch }}
-        <pre v-if="tree">
-            {{ tree }}
-        </pre>
+        <tree-view v-if="tree && tree.length && tree[0].children" :nodes="tree[0].children" />
     </div>
 </template>
 <script setup lang="ts">

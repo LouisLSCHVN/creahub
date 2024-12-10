@@ -19,6 +19,7 @@ export async function fetchUser(username: string) {
       statusCode: 404
     })
     return {
+      data: (response as HttpResponseOptions).data,
       user: (response as HttpResponseOptions).data.user,
       workshops: (response as HttpResponseOptions).data.workshops
     }
